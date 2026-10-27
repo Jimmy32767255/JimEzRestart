@@ -112,7 +112,7 @@ PYTHONPATH=src QT_QPA_PLATFORM=offscreen python3 -m unittest discover -s tests -
 ```
 
 测试覆盖系统/桌面检测、内核枚举、特权参数校验、Alt 文案切换、菜单选项、
-禁用原因、硬重启倒计时和内核选择弹窗，共 41 项。
+禁用原因、硬重启倒计时和内核选择弹窗，共 42 项。
 
 重新生成 README 截图（演示数据，不会执行操作）：
 

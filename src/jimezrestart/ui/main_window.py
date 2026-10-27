@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 from PyQt6.QtCore import QEvent, QProcess, Qt, QTimer
-from PyQt6.QtGui import QAction, QActionGroup, QCloseEvent
+from PyQt6.QtGui import QAction, QActionGroup, QCloseEvent, QKeyEvent
 from PyQt6.QtWidgets import (
     QApplication,
     QFrame,
@@ -76,6 +76,7 @@ class MainWindow(QMainWindow):
         self.cold_mode = "reboot"
         self.native_kexec = False
         self._alt = False
+        self._alt_down = False
         self._busy = False
         self._proc: QProcess | None = None
         self._aux_proc: QProcess | None = None
@@ -642,7 +643,15 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     def _poll_alt(self) -> None:
-        modifiers = QApplication.keyboardModifiers()
+        # While a physical Alt press is down, never let a flaky modifier
+        # query cancel it: some Wayland/Qt combinations report NoModifier
+        # between key events, which made the label flash for one frame.
+        if self._alt_down:
+            return
+        modifiers = (
+            QApplication.queryKeyboardModifiers()
+            | QApplication.keyboardModifiers()
+        )
         self._set_alt(bool(modifiers & Qt.KeyboardModifier.AltModifier))
 
     def _set_alt(self, alt: bool) -> None:
@@ -655,12 +664,18 @@ class MainWindow(QMainWindow):
         self._refresh_actions()
 
     def eventFilter(self, obj, event) -> bool:  # noqa: N802 - Qt naming
-        if event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Alt:
-            self._set_alt(True)
-        elif event.type() == QEvent.Type.KeyRelease and event.key() == Qt.Key.Key_Alt:
-            self._set_alt(False)
-        elif event.type() == QEvent.Type.ApplicationDeactivate:
-            self._set_alt(False)
+        if isinstance(event, QKeyEvent) and event.key() == Qt.Key.Key_Alt:
+            if event.type() == QEvent.Type.KeyPress:
+                self._alt_down = True
+                self._set_alt(True)
+            elif event.type() == QEvent.Type.KeyRelease:
+                self._alt_down = False
+                self._set_alt(False)
+        elif event.type() == QEvent.Type.ApplicationActivate:
+            # Re-sync after returning from another application; a release
+            # may have happened while we were not receiving key events.
+            self._alt_down = False
+            self._poll_alt()
         return super().eventFilter(obj, event)
 
     # ------------------------------------------------------------------

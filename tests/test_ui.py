@@ -6,6 +6,8 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PyQt6.QtCore import Qt  # noqa: E402
+from PyQt6.QtTest import QTest  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QDialog  # noqa: E402
 
 from jimezrestart.actions import ACTION_REBOOT  # noqa: E402
@@ -52,6 +54,19 @@ class UiTests(unittest.TestCase):
         self.assertEqual(self.window.warm_button.text(), "重启当前内核")
         self.assertEqual(self.window.cold_button.text(), "标准重启")
         self.assertEqual(self.window.cold_button.property("accent"), "blue")
+
+    def test_alt_stays_active_while_key_is_held(self):
+        QTest.keyPress(self.window, Qt.Key.Key_Alt)
+        self.assertTrue(self.window._alt)
+        self.assertEqual(self.window.warm_button.text(), "切换操作系统内核")
+
+        QTest.qWait(300)
+        self.assertTrue(self.window._alt)
+        self.assertEqual(self.window.warm_button.text(), "切换操作系统内核")
+
+        QTest.keyRelease(self.window, Qt.Key.Key_Alt)
+        self.assertFalse(self.window._alt)
+        self.assertEqual(self.window.warm_button.text(), "重启当前内核")
 
     def test_convert_menu_is_independent_of_alt(self):
         self.window._set_warm_mode("switch")
