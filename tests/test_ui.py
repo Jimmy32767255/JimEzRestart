@@ -10,7 +10,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PyQt6.QtCore import QEvent, Qt  # noqa: E402
 from PyQt6.QtGui import QKeyEvent  # noqa: E402
 from PyQt6.QtTest import QTest  # noqa: E402
-from PyQt6.QtWidgets import QApplication, QDialog  # noqa: E402
+from PyQt6.QtWidgets import QApplication, QDialog, QLabel  # noqa: E402
 
 from jimezrestart.actions import ACTION_REBOOT  # noqa: E402
 from jimezrestart.demo import demo_data  # noqa: E402
@@ -36,6 +36,13 @@ class UiTests(unittest.TestCase):
         self.app.processEvents()
 
     def test_initial_texts_and_modes(self):
+        titles = [
+            label.text()
+            for label in self.window.findChildren(QLabel)
+            if label.objectName() == "cardTitle"
+        ]
+        self.assertIn("暖重启", titles)
+        self.assertNotIn("温重启", titles)
         self.assertEqual(self.window.desktop_button.text(), "重启桌面")
         self.assertEqual(self.window.warm_button.text(), "重启当前内核")
         self.assertEqual(self.window.cold_button.text(), "标准重启")

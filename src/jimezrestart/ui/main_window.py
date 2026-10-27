@@ -260,7 +260,7 @@ class MainWindow(QMainWindow):
 
     def _build_warm_card(self) -> Card:
         card = Card("yellow", self)
-        header = CardHeader("温重启", "yellow", card)
+        header = CardHeader("暖重启", "yellow", card)
         header.add_badge("kexec", "yellow")
 
         convert = MenuButton("转换…", card)
@@ -801,7 +801,7 @@ class MainWindow(QMainWindow):
             return
         mode = "原生 kexec" if self.native_kexec else "systemd kexec"
         dialog = ConfirmDialog(
-            "温重启",
+            "暖重启",
             f"使用{mode}重启当前内核？",
             f"将重新启动 <b>{kernel.name} {kernel.version}</b>"
             f"（{kernel.release}），无需重新经过主板自检。",

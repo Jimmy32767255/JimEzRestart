@@ -16,7 +16,7 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
   也可以退回到直接命令；方式集中在右上角“其它方式”菜单；自动检测 KDE Plasma、
   GNOME、Xfce、Cinnamon、MATE、Sway、Hyprland。
 - **热重启**：`systemctl soft-reboot`，只重启用户空间，需要 systemd 254 或更高。
-- **温重启**：`kexec -l` 载入内核，再由 `systemctl kexec` 启动；默认重新运行当前内核。
+- **暖重启**：`kexec -l` 载入内核，再由 `systemctl kexec` 启动；默认重新运行当前内核。
 - **切换内核**：从 `/usr/lib/modules` 枚举已安装的内核，用 kexec 直接切换，不经过
   主板自检。没有其它内核时会提示用包管理器安装。
 - **原生 kexec**：可选的 `kexec -e` 路径，绕过 systemd；在“选项…”菜单中启用，
@@ -36,7 +36,7 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 | 卡片 | 默认（不按 Alt） | 按住 Alt |
 | --- | --- | --- |
 | 重启桌面 | 以 systemd 用户单元重启 | 以命令重启 |
-| 温重启 | 重启当前内核 | 切换操作系统内核 |
+| 暖重启 | 重启当前内核 | 切换操作系统内核 |
 | 冷重启 | 标准重启 | 硬重启 |
 
 ## 安装
@@ -54,7 +54,7 @@ jimezrestart
 ```
 
 运行时依赖：`python`、`python-pyqt6`、`polkit`（提供 `pkexec`）、`systemd`。
-`kexec-tools` 是温重启和切换内核的可选依赖；没有它时相关按钮会置灰。
+`kexec-tools` 是暖重启和切换内核的可选依赖；没有它时相关按钮会置灰。
 
 ## 从源码构建
 
@@ -100,8 +100,8 @@ pkexec /usr/lib/jimezrestart/jimezrestart-helper <action> [--kernel ... --initrd
   也无效时才使用。
 - 原生 kexec 在部分固件、显卡驱动或加密磁盘环境下可能黑屏、卡死或无法启动。
 - 没有 systemd 时，热重启和 systemd 单元重启不可用；可以勾选“使用原生 kexec”
-  让温重启走 `kexec -e`。
-- 没有 `kexec-tools` 时，温重启、切换内核和原生 kexec 都不可用。
+  让暖重启走 `kexec -e`。
+- 没有 `kexec-tools` 时，暖重启、切换内核和原生 kexec 都不可用。
 - 内核 lockdown 开启时，kexec 被内核禁止。
 - 切换内核会终止当前会话，请先保存工作。
 

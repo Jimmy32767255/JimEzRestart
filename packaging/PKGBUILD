@@ -8,7 +8,7 @@ url='https://github.com/Jimmy32767255/JimEzRestart'
 license=('GPL-3.0-only')
 depends=('python' 'python-pyqt6' 'polkit' 'systemd' 'hicolor-icon-theme' 'bash')
 optdepends=(
-    'kexec-tools: 温重启和切换操作系统内核'
+    'kexec-tools: 暖重启和切换操作系统内核'
     'sudo: 手动执行文档中给出的命令'
 )
 makedepends=('python')
