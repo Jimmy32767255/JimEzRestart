@@ -1,0 +1,4 @@
+#!/bin/sh
+# Launcher installed by the Arch package.
+export PYTHONPATH="/usr/lib/jimezrestart${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m jimezrestart "$@"

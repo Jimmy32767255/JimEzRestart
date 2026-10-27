@@ -1,0 +1,43 @@
+# Maintainer: Jimmy32767255 <Jimmy32767255@outlook.com>
+pkgname=jimezrestart
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Restart the desktop, the running kernel or the whole system'
+arch=('any')
+url='https://github.com/Jimmy32767255/JimEzRestart'
+license=('GPL-3.0-only')
+depends=('python' 'python-pyqt6' 'polkit' 'systemd' 'hicolor-icon-theme' 'bash')
+optdepends=(
+    'kexec-tools: 温重启和切换操作系统内核'
+    'sudo: 手动执行文档中给出的命令'
+)
+makedepends=('python')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+install=jimezrestart.install
+options=(!emptydirs)
+
+package() {
+    cd "$srcdir/$pkgname-$pkgver"
+
+    install -d "$pkgdir/usr/lib/jimezrestart"
+    cp -R src/jimezrestart "$pkgdir/usr/lib/jimezrestart/"
+
+    install -Dm755 packaging/jimezrestart "$pkgdir/usr/bin/jimezrestart"
+    install -Dm755 helper/jimezrestart-helper \
+        "$pkgdir/usr/lib/jimezrestart/jimezrestart-helper"
+
+    install -Dm644 data/icons/jimezrestart.svg \
+        "$pkgdir/usr/share/icons/hicolor/scalable/apps/jimezrestart.svg"
+    install -Dm644 data/jimezrestart.desktop \
+        "$pkgdir/usr/share/applications/jimezrestart.desktop"
+    install -Dm644 data/io.github.jimmy32767255.JimEzRestart.metainfo.xml \
+        "$pkgdir/usr/share/metainfo/io.github.jimmy32767255.JimEzRestart.metainfo.xml"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
+    find "$pkgdir/usr/lib/jimezrestart/jimezrestart" -type d -exec chmod 755 {} +
+    find "$pkgdir/usr/lib/jimezrestart/jimezrestart" -type f -exec chmod 644 {} +
+
+    find "$pkgdir/usr/lib/jimezrestart" -type d -name __pycache__ -prune -exec rm -rf {} +
+    find "$pkgdir/usr/lib/jimezrestart" -type f -name '*.pyc' -delete
+}
