@@ -127,7 +127,8 @@ class UiTests(unittest.TestCase):
 
     def test_convert_menu_is_independent_of_alt(self):
         self.window._set_warm_mode("switch")
-        self.assertTrue(self.window.warm_switch_action.isChecked())
+        self.assertEqual(self.window.warm_mode, "switch")
+        self.assertFalse(self.window.warm_switch_action.isCheckable())
         self.assertEqual(self.window.warm_button.text(), "切换操作系统内核")
 
         self.window._set_alt(True)
@@ -137,6 +138,18 @@ class UiTests(unittest.TestCase):
 
         self.window._set_warm_mode("restart")
         self.assertEqual(self.window.warm_button.text(), "重启当前内核")
+
+    def test_choice_menus_are_plain_actions(self):
+        for action in (
+            self.window.unit_action,
+            self.window.command_action,
+            self.window.warm_restart_action,
+            self.window.warm_switch_action,
+            self.window.cold_reboot_action,
+            self.window.cold_hard_action,
+        ):
+            self.assertFalse(action.isCheckable(), action.text())
+        self.assertTrue(self.window.native_action.isCheckable())
 
     def test_options_only_exist_in_menus(self):
         self.assertFalse(hasattr(self.window, "unit_method_button"))
@@ -154,7 +167,7 @@ class UiTests(unittest.TestCase):
     def test_desktop_command_mode(self):
         self.window._set_desktop_mode("command")
         self.assertEqual(self.window.desktop_mode, "command")
-        self.assertTrue(self.window.command_action.isChecked())
+        self.assertFalse(self.window.command_action.isCheckable())
         self.assertEqual(self.window.desktop_button.text(), "以命令重启桌面")
         self.assertIn("命令", self.window.desktop_hint.text())
 
@@ -163,7 +176,7 @@ class UiTests(unittest.TestCase):
         self.assertEqual(self.window.cold_mode, "hard")
         self.assertEqual(self.window.cold_button.text(), "硬重启")
         self.assertEqual(self.window.cold_button.property("accent"), "red")
-        self.assertTrue(self.window.cold_hard_action.isChecked())
+        self.assertFalse(self.window.cold_hard_action.isCheckable())
 
     def test_hard_reboot_countdown(self):
         dialog = ConfirmDialog(

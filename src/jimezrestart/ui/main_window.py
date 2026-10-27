@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 from PyQt6.QtCore import QEvent, QProcess, Qt, QTimer
-from PyQt6.QtGui import QAction, QActionGroup, QCloseEvent, QKeyEvent
+from PyQt6.QtGui import QAction, QCloseEvent, QKeyEvent
 from PyQt6.QtWidgets import (
     QApplication,
     QFrame,
@@ -196,19 +196,13 @@ class MainWindow(QMainWindow):
         menu.setMenu(QMenu(menu))
         menu.menu().setToolTipsVisible(True)
         self.desktop_menu = menu.menu()
-        group = QActionGroup(self)
-        group.setExclusive(True)
 
         self.unit_action = QAction("以 systemd 单元重启（默认）", self)
-        self.unit_action.setCheckable(True)
         self.unit_action.triggered.connect(lambda: self._set_desktop_mode("unit"))
-        group.addAction(self.unit_action)
         menu.menu().addAction(self.unit_action)
 
         self.command_action = QAction("以命令重启（不推荐）", self)
-        self.command_action.setCheckable(True)
         self.command_action.triggered.connect(lambda: self._set_desktop_mode("command"))
-        group.addAction(self.command_action)
         menu.menu().addAction(self.command_action)
         header.add_menu(menu)
         card.add(header)
@@ -272,19 +266,13 @@ class MainWindow(QMainWindow):
         convert = MenuButton("转换…", card)
         convert.setMenu(QMenu(convert))
         self.warm_menu = convert.menu()
-        group = QActionGroup(self)
-        group.setExclusive(True)
 
         self.warm_restart_action = QAction("重启当前内核", self)
-        self.warm_restart_action.setCheckable(True)
         self.warm_restart_action.triggered.connect(lambda: self._set_warm_mode("restart"))
-        group.addAction(self.warm_restart_action)
         convert.menu().addAction(self.warm_restart_action)
 
         self.warm_switch_action = QAction("切换操作系统内核", self)
-        self.warm_switch_action.setCheckable(True)
         self.warm_switch_action.triggered.connect(lambda: self._set_warm_mode("switch"))
-        group.addAction(self.warm_switch_action)
         convert.menu().addAction(self.warm_switch_action)
         header.add_menu(convert)
 
@@ -337,19 +325,13 @@ class MainWindow(QMainWindow):
         convert = MenuButton("转换…", card)
         convert.setMenu(QMenu(convert))
         self.cold_menu = convert.menu()
-        group = QActionGroup(self)
-        group.setExclusive(True)
 
         self.cold_reboot_action = QAction("标准重启", self)
-        self.cold_reboot_action.setCheckable(True)
         self.cold_reboot_action.triggered.connect(lambda: self._set_cold_mode("reboot"))
-        group.addAction(self.cold_reboot_action)
         convert.menu().addAction(self.cold_reboot_action)
 
         self.cold_hard_action = QAction("硬重启（⚠️ 谨慎使用）", self)
-        self.cold_hard_action.setCheckable(True)
         self.cold_hard_action.triggered.connect(lambda: self._set_cold_mode("hard"))
-        group.addAction(self.cold_hard_action)
         convert.menu().addAction(self.cold_hard_action)
         header.add_menu(convert)
         card.add(header)
@@ -484,8 +466,6 @@ class MainWindow(QMainWindow):
 
         self.unit_action.setEnabled(unit_available and not self._busy)
         self.command_action.setEnabled(command.available and not self._busy)
-        self.unit_action.setChecked(self.desktop_mode == "unit")
-        self.command_action.setChecked(self.desktop_mode == "command")
         self.unit_action.setToolTip(unit_reason if not unit_available else unit.hint)
         self.command_action.setToolTip(
             command.reason if not command.available else command.hint
@@ -559,8 +539,6 @@ class MainWindow(QMainWindow):
 
         self.warm_restart_action.setEnabled(restart_ok and not self._busy)
         self.warm_switch_action.setEnabled(switch_ok and not self._busy)
-        self.warm_restart_action.setChecked(self.warm_mode == "restart")
-        self.warm_switch_action.setChecked(self.warm_mode == "switch")
 
         self._set_dual_text(
             self.warm_button,
@@ -608,8 +586,6 @@ class MainWindow(QMainWindow):
 
         self.cold_reboot_action.setEnabled(not reboot_reason and not self._busy)
         self.cold_hard_action.setEnabled(not hard_reason and not self._busy)
-        self.cold_reboot_action.setChecked(self.cold_mode == "reboot")
-        self.cold_hard_action.setChecked(self.cold_mode == "hard")
 
         effective_hard = self._alt or self.cold_mode == "hard"
         self._set_dual_text(
