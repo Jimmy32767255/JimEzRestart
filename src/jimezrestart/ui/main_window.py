@@ -120,6 +120,7 @@ class MainWindow(QMainWindow):
 
         scroll = QScrollArea(root)
         scroll.setWidgetResizable(True)
+        self._scroll = scroll
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         root_layout.addWidget(scroll)
@@ -166,6 +167,38 @@ class MainWindow(QMainWindow):
         col.addStretch(1)
 
         scroll.setWidget(content)
+        self._setup_focus_chain()
+        app = QApplication.instance()
+        if app is not None:
+            app.focusChanged.connect(self._on_focus_changed)
+
+    def _on_focus_changed(self, _old, new) -> None:
+        """Keep the focused control visible when Tab moves past the viewport."""
+        if new is None or not isinstance(new, QWidget):
+            return
+        scroll = getattr(self, "_scroll", None)
+        if scroll is None:
+            return
+        viewport = scroll.viewport()
+        if viewport is None or not viewport.isAncestorOf(new):
+            return
+        scroll.ensureWidgetVisible(new, 12, 24)
+
+    def _setup_focus_chain(self) -> None:
+        """Make Tab move through the cards in the same order they are drawn."""
+        chain = [
+            self.desktop_menu_button,
+            self.desktop_button,
+            self.hot_button,
+            self.warm_menu_button,
+            self.warm_button,
+            self.warm_options_button,
+            self.cold_menu_button,
+            self.cold_button,
+        ]
+        for before, after in zip(chain, chain[1:]):
+            QWidget.setTabOrder(before, after)
+        self._focus_chain = chain
 
     def _build_header(self) -> QHBoxLayout:
         row = QHBoxLayout()
@@ -204,6 +237,7 @@ class MainWindow(QMainWindow):
         menu.setMenu(QMenu(menu))
         menu.menu().setToolTipsVisible(True)
         self.desktop_menu = menu.menu()
+        self.desktop_menu_button = menu
 
         self.unit_action = QAction("以 systemd 单元重启（默认）", self)
         self.unit_action.triggered.connect(lambda: self._set_desktop_mode("unit"))
@@ -273,6 +307,7 @@ class MainWindow(QMainWindow):
 
         convert = MenuButton("转换…", card)
         convert.setMenu(QMenu(convert))
+        self.warm_menu_button = convert
         self.warm_menu = convert.menu()
 
         self.warm_restart_action = QAction("重启当前内核", self)
@@ -287,6 +322,7 @@ class MainWindow(QMainWindow):
         options = MenuButton("选项…", card)
         options.setMenu(QMenu(options))
         options.menu().setToolTipsVisible(True)
+        self.warm_options_button = options
         self.warm_options_menu = options.menu()
         self.native_action = QAction("使用原生 kexec（⚠️ 可能黑屏卡死）", self)
         self.native_action.setCheckable(True)
@@ -332,6 +368,7 @@ class MainWindow(QMainWindow):
 
         convert = MenuButton("转换…", card)
         convert.setMenu(QMenu(convert))
+        self.cold_menu_button = convert
         self.cold_menu = convert.menu()
 
         self.cold_reboot_action = QAction("标准重启", self)
@@ -977,6 +1014,10 @@ class MainWindow(QMainWindow):
         app = QApplication.instance()
         if app is not None:
             app.removeEventFilter(self)
+            try:
+                app.focusChanged.disconnect(self._on_focus_changed)
+            except TypeError:
+                pass
         self._alt_timer.stop()
         self._status_timer.stop()
         super().closeEvent(event)

@@ -269,6 +269,17 @@ QPushButton#actionButton:disabled {{
     border-color: #242a34;
     color: #5b6374;
 }}
+QPushButton#actionButton:focus {{
+    border: 2px solid {p.blue};
+}}
+QPushButton#actionButton[accent="green"]:focus {{ border-color: {p.green}; }}
+QPushButton#actionButton[accent="orange"]:focus {{ border-color: {p.orange}; }}
+QPushButton#actionButton[accent="yellow"]:focus {{ border-color: {p.yellow}; }}
+QPushButton[accent="blue"]:focus {{ border-color: {p.blue}; }}
+QPushButton[accent="red"]:focus {{ border-color: {p.red}; }}
+QPushButton#actionButton:disabled:focus {{
+    border: 1px solid #242a34;
+}}
 
 QPushButton#methodButton {{
     text-align: left;
@@ -292,6 +303,9 @@ QPushButton#methodButton[accent="green"]:checked {{ border-color: #2f7358; backg
 QPushButton#methodButton[accent="orange"]:checked {{ border-color: #7a4a22; background: #2a1d12; }}
 QPushButton#methodButton[accent="yellow"]:checked {{ border-color: #6e5c19; background: #2a250f; }}
 QPushButton#methodButton[accent="blue"]:checked {{ border-color: #2f5b8a; background: #152233; }}
+QPushButton#methodButton:focus {{
+    border: 2px solid {p.blue};
+}}
 QPushButton#methodButton:disabled {{
     background: #15181e;
     border-color: #222831;
@@ -309,6 +323,10 @@ QPushButton#secondaryButton {{
 }}
 QPushButton#secondaryButton:hover {{
     background: #232936;
+    color: {p.text};
+}}
+QPushButton#secondaryButton:focus {{
+    border: 2px solid {p.blue};
     color: {p.text};
 }}
 
@@ -329,6 +347,10 @@ QPushButton#kernelButton:checked {{
     border-color: #2f5b8a;
     background: #152233;
     color: #eaf4ff;
+}}
+QPushButton#kernelButton:focus {{
+    border: 2px solid {p.blue};
+    color: {p.text};
 }}
 QPushButton#kernelButton:disabled {{
     color: #5a6272;
@@ -353,6 +375,10 @@ QToolButton#menuButton:pressed {{
 }}
 QToolButton#menuButton:disabled {{
     color: #545c6b;
+}}
+QToolButton#menuButton:focus {{
+    border: 2px solid {p.blue};
+    color: {p.text_soft};
 }}
 QToolButton#menuButton::menu-indicator {{ image: none; width: 0px; }}
 

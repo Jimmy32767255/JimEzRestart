@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QEvent, Qt, QTimer
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QDialog,
@@ -96,6 +96,8 @@ class ConfirmDialog(QDialog):
         layout.addLayout(buttons)
 
         self.cancel_button.setFocus(Qt.FocusReason.OtherFocusReason)
+        self.cancel_button.setAccessibleDescription("按钮，按回车键执行")
+        self.confirm_button.setAccessibleDescription("按钮，按回车键执行")
 
         if countdown > 0:
             self.confirm_button.setEnabled(False)
@@ -217,6 +219,41 @@ class KernelDialog(QDialog):
         layout.addLayout(buttons)
 
         self.group.idClicked.connect(self._on_selected)
+
+        # 让方向键像单选组一样在内核之间移动，Tab 则在卡片、按钮之间移动。
+        usable = [button for button in self._buttons.values() if button.isEnabled()]
+        for index, button in enumerate(usable):
+            button.installEventFilter(self)
+            if index + 1 < len(usable):
+                QWidget.setTabOrder(button, usable[index + 1])
+        if usable:
+            usable[0].setFocus(Qt.FocusReason.OtherFocusReason)
+            QWidget.setTabOrder(usable[-1], self.confirm_button)
+
+    def eventFilter(self, obj, event):  # noqa: N802 - Qt naming
+        if event.type() == QEvent.Type.KeyPress and event.key() in (
+            Qt.Key.Key_Up,
+            Qt.Key.Key_Down,
+        ):
+            step = -1 if event.key() == Qt.Key.Key_Up else 1
+            if self._step_selection(obj, step):
+                return True
+        return super().eventFilter(obj, event)
+
+    def _step_selection(self, current, step: int) -> bool:
+        usable = [button for button in self._buttons.values() if button.isEnabled()]
+        try:
+            index = usable.index(current)
+        except ValueError:
+            return False
+        target = usable[(index + step) % len(usable)]
+        target.setFocus(Qt.FocusReason.TabFocusReason)
+        target.setChecked(True)
+        for button in usable:
+            if button is not target:
+                button.setChecked(False)
+        self._on_selected(self.group.id(target))
+        return True
 
     def _kernel_button(self, kernel: KernelInfo) -> QPushButton:
         is_current = kernel.release == self._current_release

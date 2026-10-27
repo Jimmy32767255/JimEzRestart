@@ -344,3 +344,182 @@ class UiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KeyboardAccessibilityTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        system, desktop, kernels = demo_data()
+        self.window = MainWindow(system, desktop, kernels, demo=True)
+        self.window.show()
+        self.app.processEvents()
+
+    def tearDown(self):
+        self.window.close()
+        self.window.deleteLater()
+        self.app.processEvents()
+
+    def test_tab_chain_follows_visual_order(self):
+        self.assertEqual(
+            self.window._focus_chain,
+            [
+                self.window.desktop_menu_button,
+                self.window.desktop_button,
+                self.window.hot_button,
+                self.window.warm_menu_button,
+                self.window.warm_button,
+                self.window.warm_options_button,
+                self.window.cold_menu_button,
+                self.window.cold_button,
+            ],
+        )
+
+    def test_tab_key_walks_through_every_action(self):
+        self.window.desktop_menu_button.setFocus()
+        self.app.processEvents()
+        visited = []
+        for _ in range(len(self.window._focus_chain)):
+            widget = self.app.focusWidget()
+            self.assertIsNotNone(widget)
+            visited.append(widget)
+            QTest.keyClick(widget, Qt.Key.Key_Tab)
+            self.app.processEvents()
+        self.assertEqual(visited, self.window._focus_chain)
+
+    def test_action_widgets_accept_focus_and_are_named(self):
+        for widget in self.window._focus_chain:
+            self.assertNotEqual(widget.focusPolicy(), Qt.FocusPolicy.NoFocus)
+            self.assertTrue(widget.accessibleName(), widget.objectName())
+
+    def test_space_activates_focused_menu_button(self):
+        self.window.desktop_menu_button.setFocus()
+        self.app.processEvents()
+        QTest.keyClick(self.window.desktop_menu_button, Qt.Key.Key_Space)
+        self.app.processEvents()
+        self.assertTrue(self.window.desktop_menu.isVisible())
+        self.window.desktop_menu.hide()
+
+    def test_menu_actions_reachable_with_keyboard(self):
+        menu = self.window.warm_menu
+        texts = [
+            action.text()
+            for action in menu.actions()
+            if not action.isSeparator() and action.isVisible()
+        ]
+        self.assertEqual(texts, ["切换操作系统内核"])
+        self.window.warm_menu_button.setFocus()
+        self.app.processEvents()
+        QTest.keyClick(self.window.warm_menu_button, Qt.Key.Key_Space)
+        self.app.processEvents()
+        self.assertTrue(menu.isVisible())
+        menu.hide()
+
+    def test_space_activates_focused_primary_button(self):
+        from jimezrestart.ui.widgets import PrimaryButton
+
+        button = PrimaryButton("测试按钮", "orange")
+        button.show()
+        self.app.processEvents()
+        called = []
+        button.clicked.connect(lambda: called.append(1))
+        button.setFocus()
+        self.app.processEvents()
+        QTest.keyClick(button, Qt.Key.Key_Space)
+        QTest.keyClick(button, Qt.Key.Key_Space)
+        self.app.processEvents()
+        self.assertEqual(len(called), 2)
+        button.close()
+        button.deleteLater()
+
+    def test_return_activates_default_button_in_dialog(self):
+        dialog = ConfirmDialog(
+            "标准重启",
+            "要重启系统吗？",
+            "测试",
+            "重启",
+            accent="blue",
+        )
+        dialog.show()
+        self.app.processEvents()
+        dialog.confirm_button.setFocus()
+        self.app.processEvents()
+        QTest.keyClick(dialog.confirm_button, Qt.Key.Key_Return)
+        self.app.processEvents()
+        self.assertEqual(dialog.result(), int(QDialog.DialogCode.Accepted))
+        dialog.deleteLater()
+
+    def test_kernel_dialog_arrow_keys_change_selection(self):
+        system, _desktop, kernels = demo_data()
+        dialog = KernelDialog(kernels, system.kernel_release)
+        dialog.show()
+        self.app.processEvents()
+        self.assertFalse(dialog.confirm_button.isEnabled())
+        self.assertIsNone(dialog.selected)
+
+        QTest.keyClick(dialog.focusWidget(), Qt.Key.Key_Down)
+        self.app.processEvents()
+        self.assertIsNotNone(dialog.selected)
+        self.assertTrue(dialog.confirm_button.isEnabled())
+        first = dialog.selected
+        QTest.keyClick(dialog.focusWidget(), Qt.Key.Key_Down)
+        self.app.processEvents()
+        self.assertIsNot(first, dialog.selected)
+        QTest.keyClick(dialog.focusWidget(), Qt.Key.Key_Up)
+        self.app.processEvents()
+        self.assertIs(first, dialog.selected)
+        dialog.close()
+        dialog.deleteLater()
+
+    def test_confirm_dialog_esc_cancels_and_focus_starts_on_cancel(self):
+        dialog = ConfirmDialog(
+            "标准重启",
+            "要重启系统吗？",
+            "测试",
+            "重启",
+            accent="blue",
+        )
+        dialog.show()
+        self.app.processEvents()
+        self.assertIs(dialog.focusWidget(), dialog.cancel_button)
+        self.assertTrue(dialog.cancel_button.accessibleDescription())
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        self.app.processEvents()
+        self.assertEqual(dialog.result(), int(QDialog.DialogCode.Rejected))
+        dialog.deleteLater()
+
+    def test_focus_follows_scroll_when_window_is_short(self):
+        from PyQt6.QtWidgets import QScrollArea
+
+        self.window.setMinimumSize(400, 300)
+        self.window.resize(700, 430)
+        self.app.processEvents()
+        scroll = self.window.findChild(QScrollArea)
+        bar = scroll.verticalScrollBar()
+        self.assertGreater(bar.maximum(), 0)
+
+        self.window.cold_button.setFocus()
+        self.app.processEvents()
+        self.assertGreater(bar.value(), 0)
+
+        self.window.desktop_menu_button.setFocus()
+        self.app.processEvents()
+        self.assertLess(bar.value(), bar.maximum())
+
+    def test_check_row_has_focus_ring_and_announced_name(self):
+        from jimezrestart.ui.widgets import CheckRow
+
+        row = CheckRow("使用原生 kexec")
+        row.show()
+        self.app.processEvents()
+        self.assertEqual(row.accessibleName(), "使用原生 kexec")
+        row.setFocus()
+        self.app.processEvents()
+        self.assertTrue(row.hasFocus())
+        self.assertTrue(row.indicator.focus)
+        QTest.keyClick(row, Qt.Key.Key_Space)
+        self.assertTrue(row.isChecked())
+        row.close()
+        row.deleteLater()

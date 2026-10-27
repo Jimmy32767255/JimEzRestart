@@ -149,6 +149,9 @@ class MenuButton(QToolButton):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleName(text)
+        self.setAccessibleDescription("菜单按钮，按空格键或回车键打开，方向键选择")
 
 
 class MethodButton(QPushButton):
@@ -176,12 +179,18 @@ class _CheckIndicator(QWidget):
         self.setFixedSize(18, 18)
         self.checked = False
         self.hover = False
+        self.focus = False
         self.accent = PALETTE.green
 
     def paintEvent(self, event) -> None:  # noqa: N802 - Qt naming
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect = QRectF(1.5, 1.5, 15, 15)
+        if self.focus and self.isEnabled():
+            ring = QRectF(0.6, 0.6, 16.8, 16.8)
+            painter.setPen(QPen(QColor(PALETTE.blue), 1.6))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRoundedRect(ring, 5, 5)
+        rect = QRectF(2.6, 2.6, 12.8, 12.8)
         if not self.isEnabled():
             border = QColor("#333a47")
             fill = QColor("#1a1f27") if self.checked else QColor(0, 0, 0, 0)
@@ -205,9 +214,9 @@ class _CheckIndicator(QWidget):
             painter.drawPolyline(
                 QPolygonF(
                     [
-                        QPointF(4.8, 9.2),
-                        QPointF(7.7, 12.0),
-                        QPointF(13.0, 6.0),
+                        QPointF(5.4, 9.0),
+                        QPointF(7.8, 11.5),
+                        QPointF(12.4, 6.4),
                     ]
                 )
             )
@@ -236,6 +245,26 @@ class CheckRow(QWidget):
         self.label.setObjectName("checkLabel")
         row.addWidget(self.label, 0, Qt.AlignmentFlag.AlignVCenter)
         row.addStretch(1)
+        self.text = text
+        self.setAccessibleName(text)
+        self.setAccessibleDescription("复选框，按空格键切换")
+        self.setToolTip(text)
+
+    def _sync_indicator_focus(self) -> None:
+        self.indicator.focus = self.hasFocus()
+        self.indicator.update()
+
+    def focusInEvent(self, event) -> None:  # noqa: N802 - Qt naming
+        super().focusInEvent(event)
+        self._sync_indicator_focus()
+
+    def focusOutEvent(self, event) -> None:  # noqa: N802 - Qt naming
+        super().focusOutEvent(event)
+        self._sync_indicator_focus()
+
+    def sizeHint(self) -> QSize:  # noqa: N802 - Qt naming
+        hint = super().sizeHint()
+        return QSize(hint.width(), max(hint.height(), 22))
 
     def isChecked(self) -> bool:  # noqa: N802 - Qt naming
         return self._checked
@@ -309,12 +338,18 @@ class DualActionButton(QPushButton):
         self.normal_text = normal_text
         self.alt_text = alt_text
         self._alt = False
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleName(normal_text)
+        self.setAccessibleDescription(
+            f"按钮，不按 Alt 时执行“{normal_text}”，按住 Alt 时执行“{alt_text}”"
+        )
 
     def set_alt(self, alt: bool) -> None:
         if alt == self._alt:
             return
         self._alt = alt
         self.setText(self.alt_text if alt else self.normal_text)
+        self.setAccessibleName(self.alt_text if alt else self.normal_text)
 
     @property
     def alt_active(self) -> bool:
@@ -329,6 +364,8 @@ class PrimaryButton(QPushButton):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setMinimumWidth(190)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleName(text)
 
 
 class InfoRow(QWidget):
