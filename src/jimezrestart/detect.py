@@ -25,6 +25,24 @@ KERNEL_PRETTY_NAMES = {
 
 SYSTEMD_SOFT_REBOOT_VERSION = (254,)
 
+# PID 1 process names mapped to the init implementation users know.  Linux
+# truncates /proc/1/comm to 15 characters, hence the short spellings.
+_INIT_DISPLAY_NAMES = {
+    "systemd": "systemd",
+    "openrc-init": "OpenRC",
+    "openrc": "OpenRC",
+    "runit": "runit",
+    "runit-init": "runit",
+    "s6-svscan": "s6",
+    "s6-linux-init": "s6",
+    "dinit": "dinit",
+    "shepherd": "GNU Shepherd",
+    "procd": "procd",
+    "busybox": "BusyBox init",
+    "tini": "tini",
+    "dumb-init": "dumb-init",
+}
+
 
 @dataclass(frozen=True)
 class SystemInfo:
@@ -268,6 +286,38 @@ def _read_text(path: Path | str) -> str:
         return ""
 
 
+def _readlink(path: Path | str) -> str:
+    try:
+        return os.readlink(path)
+    except OSError:
+        return ""
+
+
+def init_display_name(
+    comm: str,
+    proc_comm_path: Path | str = Path("/proc/1/comm"),
+) -> str:
+    """Return a human-readable init name for the PID 1 *comm* value.
+
+    ``init`` is shared by sysvinit and BusyBox init, so inspect PID 1's
+    executable when possible.  Anything we cannot identify is reported as
+    "未知" rather than the misleading "非 systemd".
+    """
+
+    name = comm.strip()
+    if not name:
+        return "未知"
+    if name != "init":
+        return _INIT_DISPLAY_NAMES.get(name, "未知")
+
+    proc_dir = Path(proc_comm_path).parent
+    exe = _readlink(proc_dir / "exe")
+    cmdline = _read_text(proc_dir / "cmdline")
+    if "busybox" in Path(exe).name.lower() or "busybox" in cmdline.lower():
+        return "BusyBox init"
+    return "SysV init"
+
+
 def systemd_version() -> tuple[int, ...] | None:
     """Return the installed systemd version, or None when it is unavailable."""
 
@@ -392,7 +442,7 @@ def detect_system(
         kernel_release=release,
         kernel_display=current_kernel_display(release, modules_dir),
         init_name=comm,
-        init_display="systemd" if is_systemd else f"非 systemd（{comm}）",
+        init_display=init_display_name(comm, proc_comm_path),
         is_systemd=is_systemd,
         systemd_version=sd_version,
         has_soft_reboot=bool(

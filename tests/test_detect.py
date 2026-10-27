@@ -13,6 +13,7 @@ from jimezrestart.detect import (
     detect_desktop,
     detect_system,
     guess_pkgbase,
+    init_display_name,
     kernel_pretty_name,
     kernel_version,
     parse_os_release,
@@ -117,6 +118,29 @@ class DetectSystemTests(unittest.TestCase):
                 info.systemd_version >= SYSTEMD_SOFT_REBOOT_VERSION,
             )
 
+
+    def test_init_display_names(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            comm = root / "comm"
+            for value, expected in (
+                ("systemd", "systemd"),
+                ("openrc-init", "OpenRC"),
+                ("runit", "runit"),
+                ("s6-svscan", "s6"),
+                ("dinit", "dinit"),
+                ("shepherd", "GNU Shepherd"),
+                ("init", "SysV init"),
+                ("bwrap", "未知"),
+                ("", "未知"),
+            ):
+                comm.write_text(value, encoding="utf-8")
+                self.assertEqual(init_display_name(value, comm), expected)
+
+            comm.write_text("init", encoding="utf-8")
+            (root / "exe").symlink_to("/bin/busybox")
+            self.assertEqual(init_display_name("init", comm), "BusyBox init")
+
     def test_non_systemd(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -132,7 +156,7 @@ class DetectSystemTests(unittest.TestCase):
         self.assertFalse(info.is_systemd)
         self.assertFalse(info.has_soft_reboot)
         self.assertFalse(info.has_sysrq)
-        self.assertIn("bwrap", info.init_display)
+        self.assertEqual(info.init_display, "未知")
 
 
 def _system(is_systemd: bool = True) -> SystemInfo:
@@ -142,7 +166,7 @@ def _system(is_systemd: bool = True) -> SystemInfo:
         kernel_release="6.18.58-1-lts",
         kernel_display="Linux-LTS 6.18.58",
         init_name="systemd" if is_systemd else "bwrap",
-        init_display="systemd" if is_systemd else "非 systemd（bwrap）",
+        init_display="systemd" if is_systemd else "未知",
         is_systemd=is_systemd,
         systemd_version=(262,) if is_systemd else None,
         has_soft_reboot=is_systemd,

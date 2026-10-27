@@ -211,7 +211,7 @@ class UiTests(unittest.TestCase):
         system = replace(
             self.system,
             init_name="bwrap",
-            init_display="非 systemd（bwrap）",
+            init_display="未知",
             is_systemd=False,
             systemd_version=None,
             has_soft_reboot=False,
