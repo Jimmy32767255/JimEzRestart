@@ -8,7 +8,7 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 
 ![JimEzRestart 主界面](screenshots/main.png)
 
-当前版本：`V0.1.0A`（打包版本 `0.1.0-1`）
+当前版本：`V0.1.0A`（打包版本 `0.1.0-3`）
 
 ## 功能
 
@@ -23,8 +23,13 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
   默认关闭并明确警告。
 - **冷重启**：标准 `reboot`；按住 Alt 或从菜单切换到硬重启时，通过
   `/proc/sysrq-trigger` 强制重启。
-- **检测信息**：发行版、当前内核、init 实现，以及 systemd 版本、kexec-tools、
-  lockdown 状态。
+- **检测信息**：发行版、当前内核、具体的 init 实现（systemd、OpenRC、runit、
+  s6、dinit、GNU Shepherd、SysV/BusyBox init 等；无法识别时显示“未知”），
+  以及 systemd 版本、kexec-tools、lockdown 状态。
+- **菜单与复选框**：“其它方式”和“转换…”菜单中的选择项是普通菜单按钮，不显示
+  复选框；只有“选项…”里的原生 kexec 是复选框。
+- **状态栏**：结果或错误提示显示 6 秒后自动回到“就绪”；正在执行的操作不会被
+  该计时器清掉。
 - 不可用的功能会置灰，鼠标悬停可看到具体原因（例如没有 systemd、没有
   kexec-tools、没有 pkexec、内核 lockdown、缺少 initramfs）。
 
@@ -44,7 +49,7 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 从本仓库构建出的安装包可以直接安装：
 
 ```bash
-sudo pacman -U jimezrestart-0.1.0-2-any.pkg.tar.zst
+sudo pacman -U jimezrestart-0.1.0-3-any.pkg.tar.zst
 ```
 
 安装后从应用菜单启动 “JimEzRestart”，或运行：
@@ -66,7 +71,7 @@ cd packaging
 ```
 
 脚本会从当前工作树生成 `jimezrestart-0.1.0.tar.gz`，然后调用 `makepkg`，产物位于
-`packaging/jimezrestart-0.1.0-2-any.pkg.tar.zst`。开发模式可以直接运行：
+`packaging/jimezrestart-0.1.0-3-any.pkg.tar.zst`。开发模式可以直接运行：
 
 ```bash
 PYTHONPATH=src python3 -m jimezrestart
@@ -111,8 +116,8 @@ pkexec /usr/lib/jimezrestart/jimezrestart-helper <action> [--kernel ... --initrd
 PYTHONPATH=src QT_QPA_PLATFORM=offscreen python3 -m unittest discover -s tests -v
 ```
 
-测试覆盖系统/桌面检测、内核枚举、特权参数校验、Alt 文案切换、菜单选项、
-禁用原因、硬重启倒计时和内核选择弹窗，共 43 项。
+测试覆盖系统/桌面检测、具体 init 名称、内核枚举、特权参数校验、Alt 文案切换、
+普通菜单按钮、禁用原因、硬重启倒计时、内核选择弹窗和状态栏复位，共 46 项。
 
 重新生成 README 截图（演示数据，不会执行操作）：
 
