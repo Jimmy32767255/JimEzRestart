@@ -472,6 +472,9 @@ class MainWindow(QMainWindow):
         else:
             unit_reason = unit.reason
 
+        # 菜单只保留与当前主按钮不同的选项，避免同一操作出现两次。
+        self.unit_action.setVisible(self.desktop_mode != "unit")
+        self.command_action.setVisible(self.desktop_mode != "command")
         self.unit_action.setEnabled(unit_available and not self._busy)
         self.command_action.setEnabled(command.available and not self._busy)
         self.unit_action.setToolTip(unit_reason if not unit_available else unit.hint)
@@ -545,6 +548,8 @@ class MainWindow(QMainWindow):
                 "载入内核后直接执行 kexec -e，绕过 systemd；部分硬件上可能黑屏或卡死。"
             )
 
+        self.warm_restart_action.setVisible(self.warm_mode != "restart")
+        self.warm_switch_action.setVisible(self.warm_mode != "switch")
         self.warm_restart_action.setEnabled(restart_ok and not self._busy)
         self.warm_switch_action.setEnabled(switch_ok and not self._busy)
 
@@ -592,6 +597,8 @@ class MainWindow(QMainWindow):
         if not hard_reason and not self.system.has_sysrq:
             hard_reason = "/proc/sysrq-trigger 不可用，无法执行 SysRq 硬重启。"
 
+        self.cold_reboot_action.setVisible(self.cold_mode != "reboot")
+        self.cold_hard_action.setVisible(self.cold_mode != "hard")
         self.cold_reboot_action.setEnabled(not reboot_reason and not self._busy)
         self.cold_hard_action.setEnabled(not hard_reason and not self._busy)
 

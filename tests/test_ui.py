@@ -173,17 +173,50 @@ class UiTests(unittest.TestCase):
             self.assertFalse(action.isCheckable(), action.text())
         self.assertTrue(self.window.native_action.isCheckable())
 
+    def visible_menu_texts(self, menu):
+        return [
+            action.text()
+            for action in menu.actions()
+            if not action.isSeparator() and action.isVisible()
+        ]
+
     def test_options_only_exist_in_menus(self):
         self.assertFalse(hasattr(self.window, "unit_method_button"))
         self.assertFalse(hasattr(self.window, "command_method_button"))
         self.assertFalse(hasattr(self.window, "native_check"))
         self.assertEqual(
-            [a.text() for a in self.window.desktop_menu.actions()],
-            ["以 systemd 单元重启（默认）", "以命令重启（不推荐）"],
+            self.visible_menu_texts(self.window.desktop_menu),
+            ["以命令重启（不推荐）"],
         )
         self.assertIn(
             "使用原生 kexec",
             self.window.native_action.text(),
+        )
+
+    def test_menus_hide_the_active_main_action(self):
+        self.assertEqual(
+            self.visible_menu_texts(self.window.warm_menu),
+            ["切换操作系统内核"],
+        )
+        self.assertEqual(
+            self.visible_menu_texts(self.window.cold_menu),
+            ["硬重启（⚠️ 谨慎使用）"],
+        )
+
+        self.window._set_warm_mode("switch")
+        self.assertEqual(
+            self.visible_menu_texts(self.window.warm_menu),
+            ["重启当前内核"],
+        )
+        self.window._set_cold_mode("hard")
+        self.assertEqual(
+            self.visible_menu_texts(self.window.cold_menu),
+            ["标准重启"],
+        )
+        self.window._set_desktop_mode("command")
+        self.assertEqual(
+            self.visible_menu_texts(self.window.desktop_menu),
+            ["以 systemd 单元重启（默认）"],
         )
 
     def test_desktop_command_mode(self):
