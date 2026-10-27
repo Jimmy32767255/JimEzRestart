@@ -66,10 +66,23 @@ class UiTests(unittest.TestCase):
         self.window._set_warm_mode("restart")
         self.assertEqual(self.window.warm_button.text(), "重启当前内核")
 
+    def test_options_only_exist_in_menus(self):
+        self.assertFalse(hasattr(self.window, "unit_method_button"))
+        self.assertFalse(hasattr(self.window, "command_method_button"))
+        self.assertFalse(hasattr(self.window, "native_check"))
+        self.assertEqual(
+            [a.text() for a in self.window.desktop_menu.actions()],
+            ["以 systemd 单元重启（默认）", "以命令重启（不推荐）"],
+        )
+        self.assertIn(
+            "使用原生 kexec",
+            self.window.native_action.text(),
+        )
+
     def test_desktop_command_mode(self):
         self.window._set_desktop_mode("command")
         self.assertEqual(self.window.desktop_mode, "command")
-        self.assertTrue(self.window.command_method_button.isChecked())
+        self.assertTrue(self.window.command_action.isChecked())
         self.assertEqual(self.window.desktop_button.text(), "以命令重启桌面")
         self.assertIn("命令", self.window.desktop_hint.text())
 
@@ -137,9 +150,9 @@ class UiTests(unittest.TestCase):
             self.assertIn("不是 systemd", window.hot_button.toolTip())
             self.assertFalse(window.warm_button.isEnabled())
             self.assertIn("原生 kexec", window.warm_button.toolTip())
-            self.assertTrue(window.native_check.isEnabled())
+            self.assertTrue(window.native_action.isEnabled())
 
-            window.native_check.setChecked(True)
+            window.native_action.setChecked(True)
             self.assertTrue(window.native_kexec)
             self.assertTrue(window.warm_button.isEnabled())
             self.assertEqual(window.warm_button.text(), "重启当前内核")
@@ -161,8 +174,8 @@ class UiTests(unittest.TestCase):
         window = MainWindow(system, self.desktop, self.kernels, demo=True)
         try:
             self.assertEqual(window.desktop_mode, "command")
-            self.assertFalse(window.unit_method_button.isEnabled())
-            self.assertIn("systemd", window.unit_method_button.toolTip())
+            self.assertFalse(window.unit_action.isEnabled())
+            self.assertIn("systemd", window.unit_action.toolTip())
             self.assertTrue(window.desktop_button.isEnabled())
         finally:
             window.close()
@@ -175,7 +188,7 @@ class UiTests(unittest.TestCase):
         try:
             self.assertFalse(window.warm_button.isEnabled())
             self.assertIn("kexec-tools", window.warm_button.toolTip())
-            self.assertFalse(window.native_check.isEnabled())
+            self.assertFalse(window.native_action.isEnabled())
         finally:
             window.close()
             window.deleteLater()

@@ -47,8 +47,8 @@ class Card(QFrame):
         self.accent = accent
 
         outer = QHBoxLayout(self)
-        outer.setContentsMargins(13, 11, 15, 11)
-        outer.setSpacing(13)
+        outer.setContentsMargins(10, 8, 12, 8)
+        outer.setSpacing(10)
 
         self.bar = AccentBar(accent, self)
         outer.addWidget(self.bar)

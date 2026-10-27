@@ -8,7 +8,6 @@ from PyQt6.QtCore import QEvent, QProcess, Qt, QTimer
 from PyQt6.QtGui import QAction, QActionGroup, QCloseEvent
 from PyQt6.QtWidgets import (
     QApplication,
-    QButtonGroup,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -43,14 +42,12 @@ from .theme import ACCENTS, PALETTE
 from .widgets import (
     Card,
     CardHeader,
-    CheckRow,
     Divider,
     DualActionButton,
     FinePrint,
     HintLabel,
     InfoRow,
     MenuButton,
-    MethodButton,
     PrimaryButton,
     SectionTitle,
     logo_label,
@@ -84,7 +81,7 @@ class MainWindow(QMainWindow):
         self._aux_proc: QProcess | None = None
 
         self.setWindowTitle(f"{APP_NAME} {DISPLAY_VERSION}")
-        self.resize(840, 1000)
+        self.resize(840, 900)
         self.setMinimumSize(700, 720)
         self._build_ui()
         self._refresh_actions()
@@ -125,11 +122,17 @@ class MainWindow(QMainWindow):
 
         column = QWidget(content)
         column.setMaximumWidth(860)
-        column.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        content_layout.addWidget(column, 0, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        column.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        centered = QHBoxLayout()
+        centered.setContentsMargins(0, 0, 0, 0)
+        centered.setSpacing(0)
+        centered.addStretch(1)
+        centered.addWidget(column, 1000)
+        centered.addStretch(1)
+        content_layout.addLayout(centered, 1)
 
         col = QVBoxLayout(column)
-        col.setContentsMargins(28, 20, 28, 16)
+        col.setContentsMargins(16, 14, 16, 12)
         col.setSpacing(8)
 
         col.addLayout(self._build_header())
@@ -208,30 +211,6 @@ class MainWindow(QMainWindow):
         header.add_menu(menu)
         card.add(header)
 
-        methods = QHBoxLayout()
-        methods.setContentsMargins(0, 0, 0, 0)
-        methods.setSpacing(8)
-
-        self.unit_method_button = MethodButton(
-            "以 systemd 单元重启（默认）", "green", card
-        )
-        self.unit_method_button.clicked.connect(lambda: self._set_desktop_mode("unit"))
-        methods.addWidget(self.unit_method_button, 1)
-
-        self.command_method_button = MethodButton(
-            "以命令重启（不推荐）", "green", card
-        )
-        self.command_method_button.clicked.connect(
-            lambda: self._set_desktop_mode("command")
-        )
-        methods.addWidget(self.command_method_button, 1)
-        card.add_layout(methods)
-
-        method_group = QButtonGroup(self)
-        method_group.setExclusive(True)
-        method_group.addButton(self.unit_method_button)
-        method_group.addButton(self.command_method_button)
-
         self.desktop_note = HintLabel(self._desktop_note(), card)
         card.add(self.desktop_note)
 
@@ -309,9 +288,13 @@ class MainWindow(QMainWindow):
 
         options = MenuButton("选项…", card)
         options.setMenu(QMenu(options))
+        options.menu().setToolTipsVisible(True)
         self.warm_options_menu = options.menu()
-        self.native_action = QAction("使用原生 kexec", self)
+        self.native_action = QAction("使用原生 kexec（⚠️ 可能黑屏卡死）", self)
         self.native_action.setCheckable(True)
+        self.native_action.setToolTip(
+            "载入内核后直接执行 kexec -e，绕过 systemd；部分硬件上可能黑屏或卡死。"
+        )
         self.native_action.toggled.connect(self._on_native_action_toggled)
         options.menu().addAction(self.native_action)
         options.menu().addSeparator()
@@ -328,25 +311,6 @@ class MainWindow(QMainWindow):
             card,
         )
         card.add(hint)
-
-        option_row = QHBoxLayout()
-        option_row.setContentsMargins(0, 2, 0, 0)
-        option_row.setSpacing(10)
-        self.native_check = CheckRow("使用原生 kexec", card)
-        self.native_check.set_accent("yellow")
-        self.native_check.toggled.connect(self._on_native_check_toggled)
-        option_row.addWidget(self.native_check, 0, Qt.AlignmentFlag.AlignVCenter)
-
-        warning = QLabel("⚠️ 可能造成黑屏卡死等问题", card)
-        warning.setObjectName("finePrint")
-        warning.setStyleSheet(f"color: {PALETTE.orange}; font-size: 11px;")
-        warning.setToolTip(
-            "原生 kexec 绕过 systemd，直接调用 kexec -e。\n"
-            "在部分固件、显卡驱动或加密磁盘环境下可能黑屏、卡死或无法启动。"
-        )
-        option_row.addWidget(warning, 0, Qt.AlignmentFlag.AlignVCenter)
-        option_row.addStretch(1)
-        card.add_layout(option_row)
 
         action_row = QHBoxLayout()
         action_row.setContentsMargins(0, 1, 0, 0)
@@ -516,18 +480,14 @@ class MainWindow(QMainWindow):
         else:
             unit_reason = unit.reason
 
-        self.unit_method_button.setChecked(self.desktop_mode == "unit")
-        self.command_method_button.setChecked(self.desktop_mode == "command")
-        self.unit_method_button.setEnabled(unit_available and not self._busy)
-        self.command_method_button.setEnabled(command.available and not self._busy)
-        self.unit_method_button.setToolTip(unit_reason if not unit_available else unit.hint)
-        self.command_method_button.setToolTip(
-            command.reason if not command.available else command.hint
-        )
         self.unit_action.setEnabled(unit_available and not self._busy)
         self.command_action.setEnabled(command.available and not self._busy)
         self.unit_action.setChecked(self.desktop_mode == "unit")
         self.command_action.setChecked(self.desktop_mode == "command")
+        self.unit_action.setToolTip(unit_reason if not unit_available else unit.hint)
+        self.command_action.setToolTip(
+            command.reason if not command.available else command.hint
+        )
 
         self._set_dual_text(
             self.desktop_button,
@@ -582,19 +542,18 @@ class MainWindow(QMainWindow):
         restart_ok = active_ok and current is not None and current.available
         switch_ok = active_ok
 
-        self.native_check.setEnabled(native_available and not self._busy)
         self.native_action.setEnabled(native_available and not self._busy)
         self.native_action.setChecked(self.native_kexec)
         if base:
-            self.native_check.setToolTip(base)
-        elif self.native_kexec:
-            self.native_check.setToolTip("将通过 kexec -e 直接重启，绕过 systemd。")
+            self.native_action.setToolTip(base)
         elif not self.system.is_systemd:
-            self.native_check.setToolTip(
-                "当前 init 不是 systemd；勾选后使用 kexec -e 直接重启，无需 systemd。"
+            self.native_action.setToolTip(
+                "当前 init 不是 systemd；启用后使用 kexec -e 直接重启，无需 systemd。"
             )
         else:
-            self.native_check.setToolTip("勾选后使用 kexec -e 直接重启。")
+            self.native_action.setToolTip(
+                "载入内核后直接执行 kexec -e，绕过 systemd；部分硬件上可能黑屏或卡死。"
+            )
 
         self.warm_restart_action.setEnabled(restart_ok and not self._busy)
         self.warm_switch_action.setEnabled(switch_ok and not self._busy)
@@ -731,18 +690,8 @@ class MainWindow(QMainWindow):
         self.cold_mode = mode
         self._refresh_actions()
 
-    def _on_native_check_toggled(self, checked: bool) -> None:
-        self.native_kexec = checked
-        self.native_action.blockSignals(True)
-        self.native_action.setChecked(checked)
-        self.native_action.blockSignals(False)
-        self._refresh_actions()
-
     def _on_native_action_toggled(self, checked: bool) -> None:
         self.native_kexec = checked
-        self.native_check.blockSignals(True)
-        self.native_check.setChecked(checked)
-        self.native_check.blockSignals(False)
         self._refresh_actions()
 
     def _show_kexec_help(self) -> None:

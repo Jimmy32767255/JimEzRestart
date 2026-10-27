@@ -20,7 +20,7 @@ def main() -> int:
     app = QApplication(sys.argv)
     apply_theme(app)
     window = MainWindow(*demo_data(), demo=True)
-    window.resize(840, 1000)
+    window.resize(840, 900)
     window.show()
     app.processEvents()
     target = Path(__file__).resolve().parent.parent / "screenshots" / "main.png"
