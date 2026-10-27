@@ -51,6 +51,21 @@ class UiTests(unittest.TestCase):
         self.assertEqual(self.window.cold_mode, "reboot")
         self.assertTrue(self.window.warm_button.isEnabled())
 
+    def test_status_returns_to_ready_after_a_while(self):
+        self.window._set_status("桌面已重启。", "ok")
+        self.assertEqual(self.window.status.text(), "桌面已重启。")
+        self.assertTrue(self.window._status_timer.isActive())
+        self.window._reset_status()
+        self.assertEqual(self.window.status.text(), "就绪")
+        self.assertEqual(self.window.status.property("level"), "")
+        self.assertFalse(self.window._status_timer.isActive())
+
+        self.window._set_busy(True)
+        self.window._set_status("正在执行…")
+        self.assertFalse(self.window._status_timer.isActive())
+        self.window._reset_status()
+        self.assertEqual(self.window.status.text(), "正在执行…")
+
     def test_alt_changes_all_three_main_buttons(self):
         self.window._set_alt(True)
         self.assertEqual(self.window.desktop_button.text(), "以命令重启桌面")

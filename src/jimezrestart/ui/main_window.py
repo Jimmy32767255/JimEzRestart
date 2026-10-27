@@ -55,6 +55,10 @@ from .widgets import (
 )
 
 
+STATUS_READY = "就绪"
+STATUS_RESET_MS = 6000
+
+
 class MainWindow(QMainWindow):
     def __init__(
         self,
@@ -81,6 +85,10 @@ class MainWindow(QMainWindow):
         self._busy = False
         self._proc: QProcess | None = None
         self._aux_proc: QProcess | None = None
+        self._status_timer = QTimer(self)
+        self._status_timer.setSingleShot(True)
+        self._status_timer.setInterval(STATUS_RESET_MS)
+        self._status_timer.timeout.connect(self._reset_status)
 
         self.setWindowTitle(f"{APP_NAME} {DISPLAY_VERSION}")
         self.resize(840, 900)
@@ -380,7 +388,7 @@ class MainWindow(QMainWindow):
         row = QHBoxLayout()
         row.setContentsMargins(2, 2, 2, 0)
         row.setSpacing(12)
-        self.status = QLabel("就绪", self)
+        self.status = QLabel(STATUS_READY, self)
         self.status.setObjectName("status")
         self.status.setWordWrap(True)
         row.addWidget(self.status, 1)
@@ -927,6 +935,19 @@ class MainWindow(QMainWindow):
         self.status.setText(text)
         self.status.setProperty("level", level)
         repolish(self.status)
+        # Do not hide an in-progress operation behind a "ready" message.
+        if self._busy:
+            self._status_timer.stop()
+        else:
+            self._status_timer.start()
+
+    def _reset_status(self) -> None:
+        self._status_timer.stop()
+        if self._busy:
+            return
+        self.status.setText(STATUS_READY)
+        self.status.setProperty("level", "")
+        repolish(self.status)
 
     def _fail(self, title: str, message: str, detail: str = "") -> None:
         self._set_status(message, "error")
@@ -950,4 +971,5 @@ class MainWindow(QMainWindow):
         if app is not None:
             app.removeEventFilter(self)
         self._alt_timer.stop()
+        self._status_timer.stop()
         super().closeEvent(event)
