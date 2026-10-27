@@ -13,13 +13,14 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 ## 功能
 
 - **重启桌面**：优先使用 systemd 用户单元（KDE 为 `plasma-plasmashell.service`），
-  也可以退回到直接命令；自动检测 KDE Plasma、GNOME、Xfce、Cinnamon、MATE、
-  Sway、Hyprland。
+  也可以退回到直接命令；方式集中在右上角“其它方式”菜单；自动检测 KDE Plasma、
+  GNOME、Xfce、Cinnamon、MATE、Sway、Hyprland。
 - **热重启**：`systemctl soft-reboot`，只重启用户空间，需要 systemd 254 或更高。
 - **温重启**：`kexec -l` 载入内核，再由 `systemctl kexec` 启动；默认重新运行当前内核。
 - **切换内核**：从 `/usr/lib/modules` 枚举已安装的内核，用 kexec 直接切换，不经过
   主板自检。没有其它内核时会提示用包管理器安装。
-- **原生 kexec**：可选的 `kexec -e` 路径，绕过 systemd；默认关闭并明确警告。
+- **原生 kexec**：可选的 `kexec -e` 路径，绕过 systemd；在“选项…”菜单中启用，
+  默认关闭并明确警告。
 - **冷重启**：标准 `reboot`；按住 Alt 或从菜单切换到硬重启时，通过
   `/proc/sysrq-trigger` 强制重启。
 - **检测信息**：发行版、当前内核、init 实现，以及 systemd 版本、kexec-tools、
@@ -110,8 +111,8 @@ pkexec /usr/lib/jimezrestart/jimezrestart-helper <action> [--kernel ... --initrd
 PYTHONPATH=src QT_QPA_PLATFORM=offscreen python3 -m unittest discover -s tests -v
 ```
 
-测试覆盖系统/桌面检测、内核枚举、特权参数校验、Alt 文案切换、转换菜单、
-禁用原因、硬重启倒计时和内核选择弹窗，共 40 项。
+测试覆盖系统/桌面检测、内核枚举、特权参数校验、Alt 文案切换、菜单选项、
+禁用原因、硬重启倒计时和内核选择弹窗，共 41 项。
 
 重新生成 README 截图（演示数据，不会执行操作）：
 
