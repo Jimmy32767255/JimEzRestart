@@ -1,0 +1,13 @@
+[project]
+name = "jimezrestart"
+version = "0.1.0"
+description = "A small GUI for restarting the desktop, the kernel, or the system"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-only" }
+authors = [{ name = "Jimmy32767255" }]
+dependencies = ["PyQt6"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
