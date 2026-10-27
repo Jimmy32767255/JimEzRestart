@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+# JimEzRestart privileged helper.
+#
+# This script is intentionally tiny and fixed: the GUI passes one of a small
+# set of action names, and every path is checked again here.  It is invoked as
+#   pkexec /usr/lib/jimezrestart/jimezrestart-helper <action> [options]
+# and must never be made setuid.
+
+set -euo pipefail
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+export LC_ALL=C
+umask 022
+
+readonly MODULES_ROOT=/usr/lib/modules
+readonly BOOT_ROOT=/boot
+readonly LOCKDOWN_FILE=/sys/kernel/security/lockdown
+
+die() {
+    printf 'jimezrestart-helper: %s\n' "$*" >&2
+    exit 1
+}
+
+usage() {
+    cat <<'EOF'
+Usage: jimezrestart-helper <action> [--kernel PATH --initrd PATH]
+
+Actions:
+  soft-reboot     systemctl soft-reboot
+  kexec-load      kexec -l ... then systemctl kexec
+  kexec-native    kexec -l ... then kexec -e
+  reboot          standard reboot
+  hard-reboot     echo b > /proc/sysrq-trigger
+EOF
+}
+
+[ "$(id -u)" -eq 0 ] || die "must run as root (use pkexec)"
+[ $# -ge 1 ] || { usage >&2; exit 2; }
+
+action=$1
+shift
+
+case "$action" in
+    soft-reboot|reboot|hard-reboot)
+        [ $# -eq 0 ] || die "$action takes no arguments"
+        ;;
+    kexec-load|kexec-native)
+        ;;
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    *)
+        die "unknown action: $action"
+        ;;
+esac
+
+kernel=
+initrd=
+if [ "$action" = "kexec-load" ] || [ "$action" = "kexec-native" ]; then
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --kernel)
+                [ $# -ge 2 ] || die "--kernel needs a value"
+                kernel=$2
+                shift 2
+                ;;
+            --initrd)
+                [ $# -ge 2 ] || die "--initrd needs a value"
+                initrd=$2
+                shift 2
+                ;;
+            *)
+                die "unexpected argument: $1"
+                ;;
+        esac
+    done
+    [ -n "$kernel" ] || die "--kernel is required"
+    [ -n "$initrd" ] || die "--initrd is required"
+fi
+
+check_lockdown() {
+    if [ -r "$LOCKDOWN_FILE" ] && grep -qE '\[(integrity|confidentiality)\]' "$LOCKDOWN_FILE"; then
+        die "kernel lockdown is enabled; kexec is not permitted"
+    fi
+}
+
+check_kexec() {
+    command -v kexec >/dev/null 2>&1 || die "kexec-tools is not installed"
+    check_lockdown
+}
+
+check_systemd() {
+    command -v systemctl >/dev/null 2>&1 || die "systemctl is not available"
+}
+
+# Refuse anything that is not a real kernel/initramfs pair under the expected
+# roots.  readlink -f removes symlinks and "..", so the prefix checks cannot be
+# fooled by a path that merely starts with the expected string.
+validate_pair() {
+    local k i
+    k=$(readlink -f -- "$kernel") || die "cannot resolve kernel path"
+    i=$(readlink -f -- "$initrd") || die "cannot resolve initramfs path"
+
+    case "$k" in
+        "$MODULES_ROOT"/*/vmlinuz) ;;
+        *) die "kernel path is outside $MODULES_ROOT: $k" ;;
+    esac
+    case "$i" in
+        "$BOOT_ROOT"/initramfs-*.img) ;;
+        *) die "initramfs path is outside $BOOT_ROOT: $i" ;;
+    esac
+
+    [ -f "$k" ] && [ -r "$k" ] || die "kernel is not a readable file: $k"
+    [ -f "$i" ] && [ -r "$i" ] || die "initramfs is not a readable file: $i"
+
+    # Guard against a directory component that is itself a symlink to somewhere
+    # unexpected: canonical paths already handle that, but re-check the parent.
+    [ "$(stat -c %F -- "$k")" = "regular file" ] || die "kernel is not a regular file"
+    [ "$(stat -c %F -- "$i")" = "regular file" ] || die "initramfs is not a regular file"
+
+    kernel=$k
+    initrd=$i
+}
+
+load_kernel() {
+    validate_pair
+    printf 'Loading kernel: %s\n' "$kernel" >&2
+    printf 'Using initramfs: %s\n' "$initrd" >&2
+    kexec -l "$kernel" --initrd="$initrd" --reuse-cmdline
+}
+
+case "$action" in
+    soft-reboot)
+        check_systemd
+        version=$(systemctl --version | awk 'NR == 1 { print $2 }')
+        major=${version%%.*}
+        if ! [[ "$major" =~ ^[0-9]+$ ]] || [ "$major" -lt 254 ]; then
+            die "systemd $version is too old for soft-reboot (need >= 254)"
+        fi
+        systemctl soft-reboot
+        ;;
+    kexec-load)
+        check_systemd
+        check_kexec
+        if ! systemctl --help 2>&1 | grep -q 'kexec'; then
+            die "this systemd does not provide 'systemctl kexec'"
+        fi
+        load_kernel
+        systemctl kexec
+        ;;
+    kexec-native)
+        check_kexec
+        load_kernel
+        kexec -e
+        ;;
+    reboot)
+        command -v reboot >/dev/null 2>&1 || die "reboot is not available"
+        reboot
+        ;;
+    hard-reboot)
+        [ -e /proc/sysrq-trigger ] || die "/proc/sysrq-trigger is not available"
+        if [ -r /proc/sys/kernel/sysrq ] && [ "$(cat /proc/sys/kernel/sysrq)" = "0" ]; then
+            printf '1' > /proc/sys/kernel/sysrq || die "cannot enable SysRq"
+        fi
+        printf 'Forcing immediate reboot via SysRq.\n' >&2
+        echo b | tee /proc/sysrq-trigger >/dev/null
+        ;;
+esac
