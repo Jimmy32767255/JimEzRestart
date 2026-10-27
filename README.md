@@ -8,7 +8,7 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 
 ![JimEzRestart 主界面](screenshots/main.png)
 
-当前版本：`V0.1.0A`（打包版本 `0.1.0-5`）
+当前版本：`V0.1.0A`（打包版本 `0.1.0-6`）
 
 ## 功能
 
@@ -26,6 +26,8 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 - **检测信息**：发行版、当前内核、具体的 init 实现（systemd、OpenRC、runit、
   s6、dinit、GNU Shepherd、SysV/BusyBox init 等；无法识别时显示“未知”），
   以及 systemd 版本、kexec-tools、lockdown 状态。
+- **深色 / 浅色主题**：默认跟随系统的配色方案，标题栏右侧的按钮可以手动在
+  跟随系统 → 深色 → 浅色之间循环；两套配色都经过对比度检查。
 - **菜单与复选框**：“其它方式”和“转换…”菜单只显示与当前主按钮不同的选项，避免重复；
   这些选择项是普通菜单按钮，不显示复选框；只有“选项…”里的原生 kexec 是复选框。
 - **状态栏**：结果或错误提示显示 6 秒后自动回到“就绪”；正在执行的操作不会被
@@ -39,7 +41,7 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 
 | 按键 | 作用 |
 | --- | --- |
-| `Tab` / `Shift+Tab` | 按视觉顺序在菜单与按钮之间移动焦点（菜单 → 主按钮，从上到下逐张卡片） |
+| `Tab` / `Shift+Tab` | 按视觉顺序移动焦点（主题按钮 → 各卡片的菜单 → 主按钮，从上到下） |
 | `空格` | 触发当前焦点按钮；在菜单按钮上打开菜单 |
 | `↑` / `↓` | 在打开的菜单里选择项目；在内核选择弹窗里切换内核 |
 | `Enter` | 确认弹窗里的默认按钮 |
@@ -49,6 +51,22 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 获得焦点的控件会用彩色描边高亮，颜色与该卡片的主题色一致。窗口高度不足时，
 焦点移动到下方控件会自动滚动到可见位置。所有按钮与复选框都带有无障碍名称，
 屏幕阅读器可以读出它们的文字与作用。
+
+## 主题
+
+界面默认跟随系统的深浅色设置：系统切换到浅色或深色时，窗口会立即跟着变。
+标题栏右侧的主题按钮可以手动覆盖：
+
+| 按钮显示 | 含义 |
+| --- | --- |
+| `◐  跟随系统（深色）` | 跟随桌面配色，括号内为当前实际生效的一侧 |
+| `☾  深色` | 固定使用深色主题 |
+| `☀  浅色` | 固定使用浅色主题 |
+
+再次点击会在三种状态之间循环。所有颜色都来自同一套语义化调色板，因此新增控件
+在两种主题下都有正确的配色；正文与次要文字的对比度满足 WCAG AA。
+
+![浅色主题](screenshots/main-light.png)
 
 ## Alt 行为
 
@@ -67,7 +85,7 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 从本仓库构建出的安装包可以直接安装：
 
 ```bash
-sudo pacman -U jimezrestart-0.1.0-5-any.pkg.tar.zst
+sudo pacman -U jimezrestart-0.1.0-6-any.pkg.tar.zst
 ```
 
 安装后从应用菜单启动 “JimEzRestart”，或运行：
@@ -89,7 +107,7 @@ cd packaging
 ```
 
 脚本会从当前工作树生成 `jimezrestart-0.1.0.tar.gz`，然后调用 `makepkg`，产物位于
-`packaging/jimezrestart-0.1.0-5-any.pkg.tar.zst`。开发模式可以直接运行：
+`packaging/jimezrestart-0.1.0-6-any.pkg.tar.zst`。开发模式可以直接运行：
 
 ```bash
 PYTHONPATH=src python3 -m jimezrestart
@@ -136,9 +154,9 @@ PYTHONPATH=src QT_QPA_PLATFORM=offscreen python3 -m unittest discover -s tests -
 
 测试覆盖系统/桌面检测、具体 init 名称、内核枚举、特权参数校验、Alt 文案切换、
 普通菜单按钮、菜单去重、键盘焦点顺序、焦点跟随滚动、禁用原因、硬重启倒计时、
-内核选择弹窗和状态栏复位，共 58 项。
+内核选择弹窗、状态栏复位和深浅色主题切换，共 68 项。
 
-重新生成 README 截图（演示数据，不会执行操作）：
+重新生成 README 截图（演示数据，不会执行操作；一次渲染深色与浅色两张）：
 
 ```bash
 PYTHONPATH=src QT_QPA_PLATFORM=offscreen python3 scripts/screenshot.py
