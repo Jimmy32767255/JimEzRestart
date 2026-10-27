@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.jimmy32767255.JimEzRestart</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <name>JimEzRestart</name>
+  <summary>Restart the desktop, the kernel or the whole system</summary>
+  <summary xml:lang="zh-CN">重启桌面、当前内核或整个系统</summary>
+  <description>
+    <p>JimEzRestart is a small control panel for the different ways of restarting a Linux system.</p>
+    <ul>
+      <li>Restart the desktop shell through its systemd user unit or a command.</li>
+      <li>Hot reboot: restart the user space with systemctl soft-reboot.</li>
+      <li>Warm reboot: boot a kernel with kexec, either through systemd or natively.</li>
+      <li>Cold reboot: a standard reboot, or an emergency SysRq hard reboot.</li>
+    </ul>
+    <p>Operations that need root go through a fixed, audited helper script via polkit.</p>
+  </description>
+  <launchable type="desktop-id">jimezrestart.desktop</launchable>
+  <url type="homepage">https://github.com/Jimmy32767255/JimEzRestart</url>
+  <url type="bugtracker">https://github.com/Jimmy32767255/JimEzRestart/issues</url>
+  <developer id="io.github.jimmy32767255">
+    <name>Jimmy32767255</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-27">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+  <categories>
+    <category>System</category>
+    <category>Settings</category>
+  </categories>
+  <keywords>
+    <keyword>restart</keyword>
+    <keyword>reboot</keyword>
+    <keyword>kexec</keyword>
+    <keyword>systemd</keyword>
+    <keyword>desktop</keyword>
+  </keywords>
+</component>

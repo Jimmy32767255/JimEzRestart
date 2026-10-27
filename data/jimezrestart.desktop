@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=JimEzRestart
+GenericName=Restart Control
+Comment=Restart the desktop, the running kernel or the whole system
+Comment[zh_CN]=重启桌面、当前内核或整个系统
+Exec=jimezrestart
+Icon=jimezrestart
+Terminal=false
+Categories=System;
+Keywords=restart;reboot;kexec;systemd;desktop;
+Keywords[zh_CN]=重启;软重启;硬重启;内核;桌面;
+StartupNotify=true
+StartupWMClass=jimezrestart
