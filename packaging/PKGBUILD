@@ -1,7 +1,7 @@
 # Maintainer: Jimmy32767255 <Jimmy32767255@outlook.com>
 pkgname=jimezrestart
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Restart the desktop, the running kernel or the whole system'
 arch=('any')
 url='https://github.com/Jimmy32767255/JimEzRestart'

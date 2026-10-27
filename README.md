@@ -44,7 +44,7 @@ JimEzRestart 是一个面向 Arch Linux / systemd 桌面的图形化重启工具
 从本仓库构建出的安装包可以直接安装：
 
 ```bash
-sudo pacman -U jimezrestart-0.1.0-1-any.pkg.tar.zst
+sudo pacman -U jimezrestart-0.1.0-2-any.pkg.tar.zst
 ```
 
 安装后从应用菜单启动 “JimEzRestart”，或运行：
@@ -66,7 +66,7 @@ cd packaging
 ```
 
 脚本会从当前工作树生成 `jimezrestart-0.1.0.tar.gz`，然后调用 `makepkg`，产物位于
-`packaging/jimezrestart-0.1.0-1-any.pkg.tar.zst`。开发模式可以直接运行：
+`packaging/jimezrestart-0.1.0-2-any.pkg.tar.zst`。开发模式可以直接运行：
 
 ```bash
 PYTHONPATH=src python3 -m jimezrestart
@@ -112,7 +112,7 @@ PYTHONPATH=src QT_QPA_PLATFORM=offscreen python3 -m unittest discover -s tests -
 ```
 
 测试覆盖系统/桌面检测、内核枚举、特权参数校验、Alt 文案切换、菜单选项、
-禁用原因、硬重启倒计时和内核选择弹窗，共 42 项。
+禁用原因、硬重启倒计时和内核选择弹窗，共 43 项。
 
 重新生成 README 截图（演示数据，不会执行操作）：
 

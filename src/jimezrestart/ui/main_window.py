@@ -77,6 +77,7 @@ class MainWindow(QMainWindow):
         self.native_kexec = False
         self._alt = False
         self._alt_down = False
+        self._alt_poll_armed = True
         self._busy = False
         self._proc: QProcess | None = None
         self._aux_proc: QProcess | None = None
@@ -644,15 +645,20 @@ class MainWindow(QMainWindow):
 
     def _poll_alt(self) -> None:
         # While a physical Alt press is down, never let a flaky modifier
-        # query cancel it: some Wayland/Qt combinations report NoModifier
-        # between key events, which made the label flash for one frame.
+        # query cancel it. After a release, ignore stale Alt readings until
+        # the platform has reported one clean no-Alt frame; otherwise a
+        # cached modifier state can switch the UI back on after release.
         if self._alt_down:
             return
         modifiers = (
             QApplication.queryKeyboardModifiers()
             | QApplication.keyboardModifiers()
         )
-        self._set_alt(bool(modifiers & Qt.KeyboardModifier.AltModifier))
+        if not (modifiers & Qt.KeyboardModifier.AltModifier):
+            self._alt_poll_armed = True
+            self._set_alt(False)
+        elif self._alt_poll_armed:
+            self._set_alt(True)
 
     def _set_alt(self, alt: bool) -> None:
         if alt == self._alt:
@@ -666,10 +672,18 @@ class MainWindow(QMainWindow):
     def eventFilter(self, obj, event) -> bool:  # noqa: N802 - Qt naming
         if isinstance(event, QKeyEvent) and event.key() == Qt.Key.Key_Alt:
             if event.type() == QEvent.Type.KeyPress:
-                self._alt_down = True
-                self._set_alt(True)
+                if event.isAutoRepeat():
+                    # A repeat queued after the release must not re-arm
+                    # polling with a stale Alt modifier state.
+                    if not self._alt_down:
+                        self._alt_poll_armed = False
+                else:
+                    self._alt_down = True
+                    self._alt_poll_armed = True
+                    self._set_alt(True)
             elif event.type() == QEvent.Type.KeyRelease:
                 self._alt_down = False
+                self._alt_poll_armed = False
                 self._set_alt(False)
         elif event.type() == QEvent.Type.ApplicationActivate:
             # Re-sync after returning from another application; a release

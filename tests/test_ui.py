@@ -3,10 +3,12 @@ import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt6.QtCore import Qt  # noqa: E402
+from PyQt6.QtCore import QEvent, Qt  # noqa: E402
+from PyQt6.QtGui import QKeyEvent  # noqa: E402
 from PyQt6.QtTest import QTest  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QDialog  # noqa: E402
 
@@ -67,6 +69,61 @@ class UiTests(unittest.TestCase):
         QTest.keyRelease(self.window, Qt.Key.Key_Alt)
         self.assertFalse(self.window._alt)
         self.assertEqual(self.window.warm_button.text(), "重启当前内核")
+
+    def test_alt_release_ignores_stale_modifier_state(self):
+        QTest.keyPress(self.window, Qt.Key.Key_Alt)
+        QTest.keyRelease(self.window, Qt.Key.Key_Alt)
+        self.assertFalse(self.window._alt)
+
+        # A stale cached modifier, or an auto-repeat press queued after the
+        # release, must not switch the labels back on.
+        with mock.patch.object(
+            QApplication,
+            "keyboardModifiers",
+            return_value=Qt.KeyboardModifier.AltModifier,
+        ), mock.patch.object(
+            QApplication,
+            "queryKeyboardModifiers",
+            return_value=Qt.KeyboardModifier.AltModifier,
+        ):
+            self.window._poll_alt()
+        # Even after a clean no-Alt frame has re-armed polling, a repeat
+        # queued after release must not switch the labels back on.
+        with mock.patch.object(
+            QApplication,
+            "keyboardModifiers",
+            return_value=Qt.KeyboardModifier.NoModifier,
+        ), mock.patch.object(
+            QApplication,
+            "queryKeyboardModifiers",
+            return_value=Qt.KeyboardModifier.NoModifier,
+        ):
+            self.window._poll_alt()
+        auto_repeat = QKeyEvent(
+            QEvent.Type.KeyPress,
+            Qt.Key.Key_Alt,
+            Qt.KeyboardModifier.AltModifier,
+            "",
+            True,
+        )
+        QApplication.sendEvent(self.window, auto_repeat)
+        with mock.patch.object(
+            QApplication,
+            "keyboardModifiers",
+            return_value=Qt.KeyboardModifier.AltModifier,
+        ), mock.patch.object(
+            QApplication,
+            "queryKeyboardModifiers",
+            return_value=Qt.KeyboardModifier.AltModifier,
+        ):
+            self.window._poll_alt()
+        self.assertFalse(self.window._alt)
+        self.assertEqual(self.window.warm_button.text(), "重启当前内核")
+
+        # A real new press must still work after the stale frame.
+        QTest.keyPress(self.window, Qt.Key.Key_Alt)
+        self.assertTrue(self.window._alt)
+        QTest.keyRelease(self.window, Qt.Key.Key_Alt)
 
     def test_convert_menu_is_independent_of_alt(self):
         self.window._set_warm_mode("switch")
