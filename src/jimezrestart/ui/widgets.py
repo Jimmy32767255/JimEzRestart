@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QPushButton,
     QSizePolicy,
     QToolButton,
@@ -15,7 +16,18 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from .theme import ACCENTS, PALETTE
+from .theme import (
+    MODE_GLYPHS,
+    MODE_LABELS,
+    MODE_LIGHT,
+    MODE_SYSTEM,
+    current_mode,
+    current_palette,
+    next_mode,
+    resolved_mode,
+    set_theme,
+    theme_bus,
+)
 
 
 def repolish(widget: QWidget) -> None:
@@ -30,12 +42,10 @@ class AccentBar(QFrame):
 
     def __init__(self, accent: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("accentBar")
+        self.setProperty("accent", accent)
         self.setFixedWidth(4)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        color = ACCENTS[accent]
-        self.setStyleSheet(
-            f"background: {color}; border: none; border-radius: 2px;"
-        )
 
 
 class Card(QFrame):
@@ -135,8 +145,8 @@ class SectionTitle(QWidget):
         label.setObjectName("sectionTitle")
         row.addWidget(label)
         line = QFrame(self)
+        line.setObjectName("rule")
         line.setFixedHeight(1)
-        line.setStyleSheet(f"background: {PALETTE.border}; border: none;")
         line.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         row.addWidget(line, 1)
 
@@ -152,6 +162,40 @@ class MenuButton(QToolButton):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAccessibleName(text)
         self.setAccessibleDescription("菜单按钮，按空格键或回车键打开，方向键选择")
+
+
+class ThemeButton(QToolButton):
+    """Cycles 跟随系统 → 深色 → 浅色 and shows the current choice."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("themeButton")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setToolTip("切换界面主题：跟随系统、深色、浅色")
+        self.clicked.connect(self._cycle)
+        theme_bus().changed.connect(self._on_theme_changed)
+        self._sync()
+
+    def _cycle(self) -> None:
+        set_theme(next_mode(current_mode()))
+
+    def _on_theme_changed(self, _mode: str) -> None:
+        self._sync()
+
+    def _sync(self) -> None:
+        mode = current_mode()
+        label = MODE_LABELS[mode]
+        glyph = MODE_GLYPHS[mode]
+        text = f"{glyph}  {label}"
+        if mode == MODE_SYSTEM:
+            text += f"（{'深色' if resolved_mode() != MODE_LIGHT else '浅色'}）"
+        self.setText(text)
+        self.setAccessibleName(f"主题：{label}")
+        self.setAccessibleDescription(
+            "按钮，按空格键或回车键在跟随系统、深色、浅色之间切换"
+        )
 
 
 class MethodButton(QPushButton):
@@ -180,31 +224,34 @@ class _CheckIndicator(QWidget):
         self.checked = False
         self.hover = False
         self.focus = False
-        self.accent = PALETTE.green
+        self.accent_name = "green"
 
     def paintEvent(self, event) -> None:  # noqa: N802 - Qt naming
+        p = current_palette()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         if self.focus and self.isEnabled():
             ring = QRectF(0.6, 0.6, 16.8, 16.8)
-            painter.setPen(QPen(QColor(PALETTE.blue), 1.6))
+            painter.setPen(QPen(QColor(p.blue), 1.6))
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRoundedRect(ring, 5, 5)
         rect = QRectF(2.6, 2.6, 12.8, 12.8)
+        accent = p.accent(self.accent_name)
         if not self.isEnabled():
-            border = QColor("#333a47")
-            fill = QColor("#1a1f27") if self.checked else QColor(0, 0, 0, 0)
+            border = QColor(p.check_disabled_border)
+            fill = QColor(p.check_disabled_fill) if self.checked else QColor(0, 0, 0, 0)
         elif self.checked:
-            border = QColor(self.accent)
-            fill = QColor(self.accent)
+            border = QColor(accent)
+            fill = QColor(accent)
         else:
-            border = QColor(PALETTE.border_strong if self.hover else "#414b5d")
-            fill = QColor("#1d232d")
+            border = QColor(p.border_strong if self.hover else p.check_border)
+            fill = QColor(p.check_fill)
         painter.setPen(QPen(border, 1.4))
         painter.setBrush(fill)
         painter.drawRoundedRect(rect, 4, 4)
         if self.checked:
-            pen = QPen(QColor("#0d1a14" if self.isEnabled() else "#6a7280"), 2.0)
+            mark = p.check_mark if self.isEnabled() else p.check_mark_disabled
+            pen = QPen(QColor(mark), 2.0)
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
             painter.setPen(pen)
@@ -279,7 +326,7 @@ class CheckRow(QWidget):
         self.toggled.emit(checked)
 
     def set_accent(self, accent: str) -> None:
-        self.indicator.accent = ACCENTS[accent]
+        self.indicator.accent_name = accent
         self.indicator.update()
 
     def mousePressEvent(self, event) -> None:  # noqa: N802 - Qt naming
@@ -391,8 +438,8 @@ class InfoRow(QWidget):
 class Divider(QFrame):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("divider")
         self.setFixedHeight(1)
-        self.setStyleSheet(f"background: {PALETTE.border}; border: none;")
 
 
 def logo_label(size: int = 44) -> QLabel:

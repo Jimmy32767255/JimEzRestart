@@ -56,9 +56,9 @@ class ConfirmDialog(QDialog):
         layout.addWidget(title_label)
 
         message = QLabel(body, self)
+        message.setObjectName("dialogBody")
         message.setWordWrap(True)
         message.setTextFormat(Qt.TextFormat.RichText)
-        message.setStyleSheet("color: #c3cad8; font-size: 13px;")
         layout.addWidget(message)
 
         if warning:
@@ -68,12 +68,11 @@ class ConfirmDialog(QDialog):
             box_layout.setContentsMargins(14, 12, 14, 12)
             box_layout.setSpacing(10)
             icon = QLabel("⚠", box)
-            icon.setStyleSheet("font-size: 18px; color: #f87171;")
+            icon.setObjectName("warningIcon")
             icon.setAlignment(Qt.AlignmentFlag.AlignTop)
             box_layout.addWidget(icon, 0, Qt.AlignmentFlag.AlignTop)
             warning_label = QLabel(warning, box)
             warning_label.setWordWrap(True)
-            warning_label.setStyleSheet("font-size: 12.5px;")
             box_layout.addWidget(warning_label, 1)
             layout.addWidget(box)
 
@@ -179,7 +178,7 @@ class KernelDialog(QDialog):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setObjectName("scrollContent")
         list_layout = QVBoxLayout(content)
         list_layout.setContentsMargins(0, 2, 4, 2)
         list_layout.setSpacing(7)

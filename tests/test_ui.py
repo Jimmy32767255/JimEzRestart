@@ -366,6 +366,7 @@ class KeyboardAccessibilityTests(unittest.TestCase):
         self.assertEqual(
             self.window._focus_chain,
             [
+                self.window.theme_button,
                 self.window.desktop_menu_button,
                 self.window.desktop_button,
                 self.window.hot_button,
@@ -378,7 +379,7 @@ class KeyboardAccessibilityTests(unittest.TestCase):
         )
 
     def test_tab_key_walks_through_every_action(self):
-        self.window.desktop_menu_button.setFocus()
+        self.window.theme_button.setFocus()
         self.app.processEvents()
         visited = []
         for _ in range(len(self.window._focus_chain)):

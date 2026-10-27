@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Render the demo window to screenshots/main.png (for the README)."""
+"""Render the demo window to screenshots/ (for the README).
+
+Without arguments both themes are rendered: ``main.png`` (dark) and
+``main-light.png``.  Pass ``dark`` or ``light`` to render a single one.
+"""
 
 from __future__ import annotations
 
@@ -13,24 +17,39 @@ from PyQt6.QtWidgets import QApplication
 
 from jimezrestart.demo import demo_data
 from jimezrestart.ui.main_window import MainWindow
-from jimezrestart.ui.theme import apply_theme
+from jimezrestart.ui.theme import MODE_DARK, MODE_LIGHT, apply_theme, set_theme
+
+TARGETS = {MODE_DARK: "main.png", MODE_LIGHT: "main-light.png"}
 
 
-def main() -> int:
-    app = QApplication(sys.argv)
-    apply_theme(app)
+def render(app: QApplication, mode: str, target: Path) -> int:
+    set_theme(mode, app)
     window = MainWindow(*demo_data(), demo=True)
     window.resize(840, 900)
     window.show()
     app.processEvents()
-    target = Path(__file__).resolve().parent.parent / "screenshots" / "main.png"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if not window.grab().save(str(target), "PNG"):
-        print("failed to save screenshot", file=sys.stderr)
+    ok = window.grab().save(str(target), "PNG")
+    window.close()
+    window.deleteLater()
+    app.processEvents()
+    if not ok:
+        print(f"failed to save {target}", file=sys.stderr)
         return 1
     print(target)
     return 0
 
 
+def main(argv: list[str]) -> int:
+    app = QApplication([argv[0]])
+    apply_theme(app)
+    wanted = [argv[1]] if len(argv) > 1 else list(TARGETS)
+    out_dir = Path(__file__).resolve().parent.parent / "screenshots"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    status = 0
+    for mode in wanted:
+        status |= render(app, mode, out_dir / TARGETS[mode])
+    return status
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv))

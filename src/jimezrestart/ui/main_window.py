@@ -38,7 +38,6 @@ from ..actions import (
 from ..detect import DesktopInfo, SystemInfo
 from ..kernels import KernelInfo, current_kernel
 from .dialogs import ConfirmDialog, KernelDialog, show_error
-from .theme import ACCENTS, PALETTE
 from .widgets import (
     Card,
     CardHeader,
@@ -50,6 +49,7 @@ from .widgets import (
     MenuButton,
     PrimaryButton,
     SectionTitle,
+    ThemeButton,
     logo_label,
     repolish,
 )
@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(scroll)
 
         content = QWidget()
-        content.setStyleSheet("background: transparent;")
+        content.setObjectName("scrollContent")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
@@ -187,6 +187,7 @@ class MainWindow(QMainWindow):
     def _setup_focus_chain(self) -> None:
         """Make Tab move through the cards in the same order they are drawn."""
         chain = [
+            self.theme_button,
             self.desktop_menu_button,
             self.desktop_button,
             self.hot_button,
@@ -219,6 +220,9 @@ class MainWindow(QMainWindow):
         row.addLayout(titles)
 
         row.addStretch(1)
+
+        self.theme_button = ThemeButton(self)
+        row.addWidget(self.theme_button, 0, Qt.AlignmentFlag.AlignVCenter)
 
         version = QLabel(DISPLAY_VERSION, self)
         version.setObjectName("versionBadge")
@@ -417,7 +421,6 @@ class MainWindow(QMainWindow):
         if self.system.lockdown:
             details.append(f"lockdown={self.system.lockdown}")
         foot = FinePrint(" · ".join(details), card)
-        foot.setStyleSheet(f"color: {PALETTE.faint}; font-size: 10.5px;")
         card.add(foot)
         return card
 
